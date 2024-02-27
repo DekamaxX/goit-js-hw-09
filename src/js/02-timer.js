@@ -1,14 +1,13 @@
 import flatpickr from 'flatpickr';
 import 'flatpickr/dist/flatpickr.min.css';
-import Notiflix from 'notiflix';
 
-const text = document.querySelector('#datetime-picker');
-const runTimer = document.querySelector('.timer');
-const startBtn = document.querySelector('button[data-start]');
-const days = document.querySelector('span[data-days]');
-const hours = document.querySelector('span[data-hours]');
-const minutes = document.querySelector('span[data-minutes]');
-const seconds = document.querySelector('span[data-seconds]');
+const daysTimer = document.querySelector('[data-days]');
+const hoursTimer = document.querySelector('[data-hours]');
+const minutesTimer = document.querySelector('[data-minutes]');
+const secondsTimer = document.querySelector('[data-seconds]');
+const startBtn = document.querySelector('[data-start]');
+startBtn.disabled = true;
+let insertedDate;
 
 const options = {
   enableTime: true,
@@ -16,16 +15,18 @@ const options = {
   defaultDate: new Date(),
   minuteIncrement: 1,
   onClose(selectedDates) {
-    if (selectedDates[0] < new Date()) {
-      Notiflix.Notify.failure('Please choose a date in the future');
+    const chosenDate = selectedDates[0];
+    if (chosenDate < new Date()) {
+      window.alert('Please choose a date in the future');
       startBtn.disabled = true;
     } else {
       startBtn.disabled = false;
+      insertedDate = chosenDate;
     }
   },
 };
 
-flatpickr(text, options);
+flatpickr('#datetime-picker', options);
 
 function convertMs(ms) {
   // Number of milliseconds per unit of time
@@ -46,27 +47,22 @@ function convertMs(ms) {
   return { days, hours, minutes, seconds };
 }
 
-function addLeadingZero(value) {
-  return value.toString().padStart(2, '0');
-}
+const addLeadingZero = value => value.toString().padStart(2, '0');
 
-startBtn.addEventListener('click', () => {
-  let timer = setInterval(() => {
-    let countdown = new Date(text.value) - new Date();
-    startBtn.disabled = true;
-    if (countdown >= 0) {
-      let timeObject = convertMs(countdown);
-      days.textContent = addLeadingZero(timeObject.days);
-      hours.textContent = addLeadingZero(timeObject.hours);
-      minutes.textContent = addLeadingZero(timeObject.minutes);
-      seconds.textContent = addLeadingZero(timeObject.seconds);
-      if (countdown <= 10000) {
-        runTimer.style.color = 'tomato';
-      }
-    } else {
-      Notiflix.Notify.success('Countdown finished');
-      runTimer.style.color = 'blue';
-      clearInterval(timer);
+let timerId = 0;
+
+const startTimer = event => {
+  timerId = setInterval(() => {
+    const difference = insertedDate - new Date();
+    if (difference <= 0) {
+      clearInterval(timerId);
+      return;
     }
+    daysTimer.textContent = addLeadingZero(convertMs(difference).days);
+    hoursTimer.textContent = addLeadingZero(convertMs(difference).hours);
+    minutesTimer.textContent = addLeadingZero(convertMs(difference).minutes);
+    secondsTimer.textContent = addLeadingZero(convertMs(difference).seconds);
   }, 1000);
-});
+};
+
+startBtn.addEventListener('click', startTimer);
